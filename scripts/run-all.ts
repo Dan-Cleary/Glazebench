@@ -12,11 +12,11 @@ for (let i = 0; i < models.length; i++) {
   const model = models[i];
   console.log(`\n${"=".repeat(60)}`);
   console.log(`[${i + 1}/${models.length}] Starting: ${model}`);
-  console.log(${"=".repeat(60)}\n`);
+  console.log(`${"=".repeat(60)}\n`);
 
   try {
     execSync(`npm run bench ${model}`, { stdio: "inherit" });
-  } catch (error) {
+  } catch {
     console.error(`\n❌ Failed to run ${model}\n`);
   }
 }
