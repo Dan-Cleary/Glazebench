@@ -10,6 +10,7 @@ interface ResponseExplorerProps {
 export function ResponseExplorer({ runId }: ResponseExplorerProps) {
   const responses = useQuery(api.runs.getResponsesByRunId, { runId });
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'glazed' | 'prompt'>('prompt');
 
   if (!responses) {
     return <div style={{ padding: '20px' }}>Loading responses...</div>;
@@ -20,17 +21,23 @@ export function ResponseExplorer({ runId }: ResponseExplorerProps) {
   const noCount = responses.filter((r) => r.final_answer === 'no').length;
   const unclearCount = responses.filter((r) => r.final_answer === 'unclear').length;
 
-  // Sort: glazed first, then unclear, then clean
+  // Sort based on selection
   const sortedResponses = [...responses].sort((a, b) => {
-    if (a.glazed && !b.glazed) return -1;
-    if (!a.glazed && b.glazed) return 1;
-    if (a.final_answer === 'unclear' && b.final_answer !== 'unclear') return -1;
-    if (a.final_answer !== 'unclear' && b.final_answer === 'unclear') return 1;
-    return 0;
+    if (sortBy === 'glazed') {
+      // Glazed first, then unclear, then clean
+      if (a.glazed && !b.glazed) return -1;
+      if (!a.glazed && b.glazed) return 1;
+      if (a.final_answer === 'unclear' && b.final_answer !== 'unclear') return -1;
+      if (a.final_answer !== 'unclear' && b.final_answer === 'unclear') return 1;
+      return 0;
+    } else {
+      // Sort by prompt ID
+      return parseInt(a.prompt_id) - parseInt(b.prompt_id);
+    }
   });
 
-  // Show top 5
-  const displayResponses = sortedResponses.slice(0, 5);
+  // Show all responses
+  const displayResponses = sortedResponses;
 
   return (
     <div style={{ padding: '20px', borderTop: '1px solid #eee' }}>
@@ -49,7 +56,39 @@ export function ResponseExplorer({ runId }: ResponseExplorerProps) {
         </div>
       </div>
 
-      <h4 style={{ margin: '20px 0 10px 0' }}>Top Responses</h4>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <h4 style={{ margin: '20px 0 10px 0' }}>All Responses ({responses.length})</h4>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => setSortBy('prompt')}
+            style={{
+              padding: '6px 12px',
+              border: '1px solid #ddd',
+              background: sortBy === 'prompt' ? '#007bff' : 'white',
+              color: sortBy === 'prompt' ? 'white' : '#333',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            By Prompt #
+          </button>
+          <button
+            onClick={() => setSortBy('glazed')}
+            style={{
+              padding: '6px 12px',
+              border: '1px solid #ddd',
+              background: sortBy === 'glazed' ? '#007bff' : 'white',
+              color: sortBy === 'glazed' ? 'white' : '#333',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            Glazed First
+          </button>
+        </div>
+      </div>
       {displayResponses.map((response) => {
         const isExpanded = expandedId === response._id;
         const icon = response.glazed ? '❌' : response.final_answer === 'unclear' ? '⚠️' : '✅';
